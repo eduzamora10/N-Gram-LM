@@ -50,9 +50,15 @@ class NGramModel:
         pass
     
     # code for smoothing
-    def smoothing(self):
+    def smoothing(self, word: str, word2: str):
         """Implement Laplace smoothing."""
-        pass
+        V = len(self.vocab)
+
+        bigram = self.bigram_counts[word][word2]
+        unigram = self.unigram_counts[word]
+
+        new_prob = (bigram + 1) / (unigram + V)
+        return new_prob
     
     # code for unknown word handling
     def unknown_word_handling(self):
@@ -76,3 +82,7 @@ if __name__ == "__main__":
                 print(f"'{word1}' -> '{word2}': {count}")
     # Test the bigram model
     print("Bigram Probability (example):", model.get_bigram_probability("cancellation", "policy"))
+    print(f"Smooth bigram probability (example): {model.smoothing('cancellation', 'policy')}")
+
+    print("Bigram Probability (example):", model.get_bigram_probability("smoking", "room"))
+    print(f"Smooth bigram probability (example): {model.smoothing('smoking', 'room')}")
