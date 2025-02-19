@@ -1,5 +1,6 @@
 import re  # for preprocessing 
 import collections  # for counting unigram & bigrams n-grams
+import math #for logarithms in perplexity calculation
 
 class NGramModel:
     def __init__(self, train, val):
@@ -81,7 +82,27 @@ class NGramModel:
     # code for perplexity calculation
     def calculate_perplexity(self):
         """Implement perplexity calculation."""
-        pass
+        total_log_prob = 0
+        total_words = 0
+        
+        with open(self.val_set, "r", encoding="utf-8") as file:
+            for line in file:
+                tokens = self.preprocess(line)
+                total_words += len(tokens) - 1  # Excluding the start token
+                
+                for i in range(len(tokens) - 1):
+                    word1, word2 = tokens[i], tokens[i + 1]
+                    prob = self.get_bigram_probability(word1, word2)
+                    
+                    if prob > 0:
+                        total_log_prob += math.log(prob)
+                    else:
+                        total_log_prob += math.log(1e-10)  # Avoid log(0) by using a small probability
+        
+        avg_log_prob = total_log_prob / total_words
+        perplexity = math.exp(-avg_log_prob)
+        return perplexity
+        
 
 if __name__ == "__main__":
     train = "train.txt"
@@ -95,3 +116,6 @@ if __name__ == "__main__":
     # Test the bigram model
     print("Bigram Probability (example):", model.get_bigram_probability("cancellation", "policy"))
     print("Bigram Probability (example, add-k)", model.addK(0.05, "bigram", "cancellation", "policy"))
+
+    #compute and print perplexity 
+    print("Perplexity:", model.calculate_perplexity())
