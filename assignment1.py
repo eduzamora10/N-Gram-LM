@@ -47,7 +47,7 @@ class NGramModel:
         # Handle unknown words after counting
         self.unknown_word_handling()
 
-    # get the bigram probabilit after unknown word handling
+    # get the bigram probability after unknown word handling
     def get_bigram_probability(self, word1, word2):
         """Compute P(word2 | word1) = count(word1, word2) / count(word1)."""
         if word1 not in self.vocab:
@@ -122,7 +122,7 @@ class NGramModel:
         new_bigram_counts = collections.defaultdict(lambda: collections.defaultdict(int))
         for w1 in self.bigram_counts:
             for w2 in self.bigram_counts[w1]:
-                new_w1 = "<UNK>" if w1 in rare_words else w1
+                new_w1 = "<UNK>" if w1 in rare_words else w1 # TODO: Revisit
                 new_w2 = "<UNK>" if w2 in rare_words else w2
                 new_bigram_counts[new_w1][new_w2] += self.bigram_counts[w1][w2]
 
@@ -163,13 +163,16 @@ if __name__ == "__main__":
     #     for word2, count in model.bigram_counts[word1].items():
     #         if count > 2:  # Change threshold to adjust how common the pair s"hould be
     #             print(f"'{word1}' -> '{word2}': {count}")
+    
     # Example with a known and unknown word
     print("Bigram Probability (handling unknown-words):", model.get_bigram_probability("xyz", "to"))
     print("Unigram Probability (handling unknown-words):", model.get_unigram_probability("xyz"))
     print("Bigram Probability (example, add-k)", model.addK(0.05, "bigram", "xyz", "to"))
+    print("Unigram Probability (add-k)", model.addK(0.05, 'unigram', 'xyz'))
     # Retrieve the original probabilities before unknown word handling
     print("Bigram Probability (unsmoothed):", model.get_raw_bigram_probability("xyz", "to"))
     print("Unigram Probability (unsmoothed):", model.get_raw_unigram_probability("xyz"))
 
-    #compute and print perplexity 
-    print("Perplexity:", model.calculate_perplexity())
+    # compute and print perplexity 
+    print("Perplexity:", model.calculate_perplexity()) 
+    # TODO: maybe move inside of each get_probability function since change for unknown word handling
