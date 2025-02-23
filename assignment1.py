@@ -84,9 +84,9 @@ class NGramModel:
         return self.raw_unigram_counts[word] / total_words if total_words > 0 else 0
         
     # code for smoothing
-    def laplace(self):
+    def laplace(self, ngram: str, word1: str, word2 = None):
         """Implement Laplace smoothing."""
-        pass
+        return self.addK(k = 1, ngram = ngram, word1 = word1, word2 = word2)
 
     def addK(self, k: int, ngram: str, word1: str, word2=None):
         """Implement Add-K smoothing."""
@@ -122,7 +122,7 @@ class NGramModel:
         new_bigram_counts = collections.defaultdict(lambda: collections.defaultdict(int))
         for w1 in self.bigram_counts:
             for w2 in self.bigram_counts[w1]:
-                new_w1 = "<UNK>" if w1 in rare_words else w1 # TODO: Revisit
+                new_w1 = "<UNK>" if w1 in rare_words else w1
                 new_w2 = "<UNK>" if w2 in rare_words else w2
                 new_bigram_counts[new_w1][new_w2] += self.bigram_counts[w1][w2]
 
@@ -131,7 +131,7 @@ class NGramModel:
         self.vocab = set(self.unigram_counts.keys())  # Update vocab
 
     # code for perplexity calculation
-    def calculate_perplexity(self):
+    def calculate_perplexity(self, method: str):
         """Implement perplexity calculation."""
         total_log_prob = 0
         total_words = 0
@@ -141,15 +141,35 @@ class NGramModel:
                 tokens = self.preprocess(line)
                 total_words += len(tokens) - 1  # Excluding the start token
                 
+                # total_zeros = 0
                 for i in range(len(tokens) - 1):
                     word1, word2 = tokens[i], tokens[i + 1]
-                    prob = self.get_bigram_probability(word1, word2)
+                    if method == "bigram":
+                        prob = self.get_bigram_probability(word1, word2)
+                    elif method == "unigram":
+                        prob = self.get_unigram_probability(word1)
+                    elif method == "raw unigram":
+                        prob = self.get_raw_unigram_probability(word1)
+                    elif method == "raw bigram":
+                        prob = self.get_raw_bigram_probability(word1, word2)
+                    elif method == "addk bigram":
+                        prob = self.addK(k = 0.05, ngram = 'bigram', word1 = word1, word2 = word2)
+                    elif method == "addk unigram":
+                        prob = self.addK(k = 0.05, ngram = 'unigram', word1 = word1)
+                    elif method == "laplace bigram":
+                        prob = self.laplace(ngram = 'bigram', word1 = word1, word2 = word2)
+                    elif method == "laplace unigram":
+                        prob = self.laplace(ngram = 'unigram', word1 = word1)
+                    else:
+                        raise ValueError("That's not a supported ngram.")                  
                     
                     if prob > 0:
                         total_log_prob += math.log(prob)
                     else:
+                        # total_zeros += 1
                         total_log_prob += math.log(1e-10)  # Avoid log(0) by using a small probability
         
+        # print(total_zeros)
         avg_log_prob = total_log_prob / total_words
         perplexity = math.exp(-avg_log_prob)
         return perplexity
@@ -167,12 +187,22 @@ if __name__ == "__main__":
     # Example with a known and unknown word
     print("Bigram Probability (handling unknown-words):", model.get_bigram_probability("xyz", "to"))
     print("Unigram Probability (handling unknown-words):", model.get_unigram_probability("xyz"))
-    print("Bigram Probability (example, add-k)", model.addK(0.05, "bigram", "xyz", "to"))
+    print("Bigram Probability (add-k)", model.addK(0.05, "bigram", "xyz", "to"))
     print("Unigram Probability (add-k)", model.addK(0.05, 'unigram', 'xyz'))
-    # Retrieve the original probabilities before unknown word handling
+    print("Bigram Probability (Laplace)", model.laplace("bigram", "xyz", "to"))
+    print("Unigram Probability (Laplace)", model.laplace('unigram', 'xyz'))
+    # Retrieve the original probabilities before unknown word handling or smoothing
     print("Bigram Probability (unsmoothed):", model.get_raw_bigram_probability("xyz", "to"))
     print("Unigram Probability (unsmoothed):", model.get_raw_unigram_probability("xyz"))
 
-    # compute and print perplexity 
-    print("Perplexity:", model.calculate_perplexity()) 
-    # TODO: maybe move inside of each get_probability function since change for unknown word handling
+    # compute and print perplexity for each model
+    print()
+    print("Raw Bigram Perplexity:", model.calculate_perplexity(method = "raw bigram"))
+    print("Bigram Perplexity:", model.calculate_perplexity(method = "bigram"))
+    print("Bigram Laplace Smoothed Perplexity:", model.calculate_perplexity(method = "laplace bigram"))
+    print("Bigram AddK Smoothed Perplexity:", model.calculate_perplexity(method = "addk bigram"))
+    
+    print("Raw Unigram Perplexity:", model.calculate_perplexity(method = "raw unigram"))
+    print("Unigram Perplexity:", model.calculate_perplexity(method = "unigram"))
+    print("Unigrame Laplace Smoothed Perplexity:", model.calculate_perplexity(method = "laplace unigram"))
+    print("Unigram AddK Smoothed Perplexity:", model.calculate_perplexity(method = "addk unigram"))
